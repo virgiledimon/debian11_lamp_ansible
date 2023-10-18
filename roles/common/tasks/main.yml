@@ -1,0 +1,4 @@
+---
+- name: 0.1 Installation des prérequis (Install prerequisites)
+  apt: name={{ item }} update_cache=yes state=latest force_apt_get=yes
+  loop: ['aptitude', 'git', 'wget', 'ufw', 'unzip', 'curl']

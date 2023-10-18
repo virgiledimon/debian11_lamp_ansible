@@ -1,0 +1,49 @@
+---
+- name: 3.1 Enable https://deb.sury.org/ repo for PHP 8.2
+  apt: name={{ item }} update_cache=yes state=latest
+  loop: ['lsb-release', 'ca-certificates']
+
+- name: 3.2 Use the curl command to download gpg files to verify package
+  shell: curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+
+- name: 3.3 Install the repo
+  shell: sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+
+- name: 3.4 Install PHP and some modules
+  apt: name={{ item }} update_cache=yes state=latest
+  loop: ['php8.2', 'php8.2-mysql', 'libapache2-mod-php8.2', 'php8.2-curl', 'php8.2-mbstring', 'php8.2-xml', 'php8.2-zip', 'php8.2-gd', ]
+
+- name: 3.5 Download the Composer installer to the current directory
+  shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+
+- name: 3.6 Verify the installer SHA-384
+  shell: php -r "if (hash_file('sha384', 'composer-setup.php') === 'e21205b207c3ff031906575712edab6f13eb0b361f2085f1f1237b7126d785e826a450292b6cfd1d64d92e6563bbde02') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+
+
+- name: 3.7 Run the installer
+  shell: php composer-setup.php
+
+- name: 3.8 Move composer.phar to make it global
+  shell: mv composer.phar /usr/local/bin/composer
+
+- name: 3.9 Run composer install in the project directory
+  become: false
+  composer: 
+    command: update
+    working_dir: /var/www/html/{{ gitlab_project_slug }}
+  
+- name: 3.10 Add permissions to project folder
+  file:
+    path: "/var/www/html/{{ gitlab_project_slug }}/"
+    state: directory
+    owner: "www-data"
+    group: "www-data"
+    mode: '0755'
+
+- name: 3.11 Change permission of storage directory
+  shell: chmod -R 775 /var/www/html/{{ gitlab_project_slug }}/storage
+
+- name: 3.12 Run migration and seeder
+  shell: php artisan migrate --force --seed
+  args:
+   chdir: /var/www/html/{{ gitlab_project_slug }}

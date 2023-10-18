@@ -1,0 +1,22 @@
+---
+- name: 2.1 Install MariaDB server package
+  apt: name=mariadb-server state=present
+
+- name: 2.2 Start Mysql Service
+  service: name=mysql state=started enabled=true
+
+- name: 2.3 Install python Mysql package
+  apt: name={{ item }} update_cache=yes state=latest force_apt_get=yes
+  loop: ['python3-mysqldb']
+
+- name: 2.4 Create a new database
+  mysql_db: name={{ main_dbname }} state=present collation=utf8_general_ci
+
+- name: 2.5 Create a database user
+  mysql_user: name={{ main_dbuser }} password={{ main_dbpasswd }} priv=*.*:ALL host=% state=present
+
+- name: 2.6 Install MySQL extension for PHP
+  apt: name=php-mysql state=present
+
+- name: 2.7 Restart Apache
+  service: name=apache2 state=restarted

@@ -1,0 +1,47 @@
+---
+- name: 1.1 Install apache2
+  apt: name=apache2 state=present
+
+- name: 1.2 Start apache
+  service: name=apache2 state=started enabled=yes
+
+# This step is optionnal
+- name: 1.3 Copy php info script
+  copy: src=index.php dest=/var/www/html/index.php mode=0664
+
+- name: 1.4 Clone the project from Gitlab
+  git: 
+    repo: 'https://{{ gitlab_user }}:{{ gitlab_password }}@gitlab.com/{{ gitlab_group_or_user }}/{{ gitlab_project_slug }}.git'
+    dest: var/www/html
+    version: main
+  
+- name: 1.5 Copy file env to .env in the project
+  copy:
+    src: env.conf
+    dest: /var/www/html/{{ gitlab_project_slug }}/.env
+
+- name: 1.6 Create a Virtual Host for the project
+  template:
+    src: "apache_vm.conf.j2"
+    dest: "/etc/apache2/sites-available/{{ http_host }}.conf"
+  notify: Reload Apache
+
+- name: 1.7 Enable the project
+  shell: /usr/sbin/a2ensite {{ http_host }}.conf
+  notify: Reload Apache
+
+- name: 1.8 Disable default Apache site
+  shell: /usr/sbin/a2dissite 000-default.conf
+  when: disable_default
+  notify: Reload Apache
+
+- name: 1.9 UFW - Allow HTTP on port {{ http_port }}
+  ufw:
+    rule: allow
+    port: "{{ http_port }}"
+    proto: tcp
+
+- name: 1.7 Enable the project
+  shell: /usr/sbin/a2ensite {{ http_host }}.conf
+  notify: Reload Apache
+

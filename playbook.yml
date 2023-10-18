@@ -1,0 +1,23 @@
+---
+- hosts: server91
+  vars_files: 
+    - vars/default.yml
+    - vars/secret.yml
+  become: true
+  roles:
+    - common
+    - apache2
+    - mariadb
+    - php
+    - adminer
+  
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2 
+        state: reloaded
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted

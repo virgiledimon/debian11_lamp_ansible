@@ -1,0 +1,22 @@
+---
+- name: 4.1 Install Adminer package
+  apt: name=adminer state=latest 
+
+- name: 4.2 Compile the deploy script
+  shell: ./compile.php
+  args:
+    chdir: /usr/share/adminer/
+
+- name: 4.3 Move adminer-*.php to adminer.php
+  shell: mv adminer-*.php adminer.php
+  args:
+    chdir: /usr/share/adminer/
+
+- name: 4.4 Send the content
+  shell: echo "Alias /adminer.php /usr/share/adminer/adminer.php" | sudo tee /etc/apache2/conf-available/adminer.conf
+  args:
+    chdir: /usr/share/adminer/
+
+- name: 4.5 Enable adminer.conf
+  shell: a2enconf adminer.conf
+  notify: Reload apache

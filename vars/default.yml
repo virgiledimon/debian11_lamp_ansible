@@ -1,0 +1,8 @@
+http_host: ""
+http_port: 80
+gitlab_project_slug: ""
+gitlab_group_or_user: ""
+main_dbname: ""
+main_dbpasswd: ""
+main_dbuser: ""
+disable_default: true
